@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fullscreen Prank (safe)</title>
+<style>
+  :root{
+    --bg:#071639;
+    --accent:#ffcc33;
+    --muted:#cfe3ff;
+    --panel:#081f4d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--muted)}
+  body{background:linear-gradient(180deg,var(--bg),#02102a);display:flex;align-items:center;justify-content:center;padding:2rem}
+  .center {
+    width:980px; max-width:96vw;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.04);
+    padding: 2rem;
+    border-radius:12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  }
+  h1 {font-size:1.6rem;margin-bottom:.5rem;color:#fff}
+  p {opacity:.95; margin-bottom:1rem}
+  .cta {
+    display:inline-flex; gap:.75rem; align-items:center;
+  }
+  button {
+    background:var(--accent); color:#081028; border:none; padding:.7rem 1rem; border-radius:10px;
+    font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  }
+  .muted {color: #b9d6ff; font-size:.95rem}
+  /* FULLSCREEN overlay */
+  .overlay {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.03), rgba(0,0,0,0.6)),
+                linear-gradient(180deg, rgba(8,22,50,0.96), rgba(3,6,18,0.98));
+    z-index:99999; padding:2rem; color:var(--muted);
+  }
+  .panel {
+    width:1100px; max-width:96vw; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:14px; padding:2rem; border:1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 20px 50px rgba(3,6,18,0.6);
+    display:flex; gap:1.5rem; align-items:center;
+  }
+  .left {flex:1}
+  .right {width:320px; min-width:220px}
+  .big-title {font-size:2.4rem; margin-bottom:.2rem; color:var(--accent); letter-spacing:.02em}
+  .sub {font-size:1rem; color:#dbe9ff; margin-bottom:1rem}
+  .progress-wrap {background:rgba(255,255,255,0.04); border-radius:10px; overflow:hidden; height:18px; width:100%}
+  .progress {height:100%; width:0; background:linear-gradient(90deg,rgba(255,255,255,0.06),rgba(255,255,255,0.14)); animation:fill 9s linear forwards}
+  @keyframes fill { from{width:2%} to{width:98%} }
+
+  .danger {
+    background:#ff4d4f; color:white; padding:.65rem .8rem; border-radius:10px; border:none; font-weight:700; cursor:pointer;
+    box-shadow:0 8px 22px rgba(255,77,79,0.18);
+  }
+
+  .hint {font-size:.9rem; color:#b9d6ff; margin-top:.6rem}
+  .small {font-size:.85rem; opacity:.9}
+
+  /* responsive */
+  @media (max-width:900px){
+    .panel{flex-direction:column; align-items:stretch}
+    .right{width:100%}
+    .big-title{font-size:1.6rem}
+  }
+</style>
+</head>
+<body>
+  <main class="center" role="main" aria-labelledby="title">
+    <h1 id="title">Welcome Bitch — System & Failure</h1>
+    <p class="muted">This page will enter fullscreen “system lock” look. It will <strong>not</strong> prevent you from exiting — press <kbd>Esc</kbd> or click the big exit button to leave.</p>
+
+    <div class="cta" aria-hidden="false">
+      <button id="startBtn">Click this to Answer</button>
+      <div class="small">Requires a click (browsers block automatic fullscreen).</div>
+    </div>
+
+    <hr style="margin:1.25rem 0;border:none;border-top:1px dashed rgba(255,255,255,0.04)">
+
+    <p class="muted">Tip: Click the button (yellow).</p>
+  </main>
+
+  <!-- FULLSCREEN UI -->
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="panel" role="document">
+      <div class="left">
+        <div class="big-title">SYSTEM LOCK — AUTH REQUIRED</div>
+        <div class="sub">HALA KA! nahack na kita HAHAHAHAHAH — joke lang sige na gawin mo na yung mga pendings.</div>
+
+        <div class="muted small">STATUS</div>
+        <div class="progress-wrap" aria-hidden="true" style="margin-top:.5rem;">
+          <div class="progress" id="progressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        </div>
+        <div class="hint" id="statusText">Authenticating theatrical lock... 0%</div>
+
+        <p class="small" style="margin-top:1rem">Exit instructions: press <kbd>Esc</kbd>, click <strong>EXIT FULLSCREEN</strong>, or press the red <strong>PANIC EXIT</strong> button.</p>
+      </div>
+
+      <div class="right">
+        <p class="small">If the browser prevents fullscreen, click the browser's allow prompt. This code is non-destructive.</p>
+
+        <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:1rem">
+          <button id="exitBtn" class="danger">PANIC EXIT</button>
+          <button id="exitFs" style="padding:.6rem .8rem;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);cursor:pointer">EXIT FULLSCREEN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Elements
+  const startBtn = document.getElementById('startBtn');
+  const overlay = document.getElementById('overlay');
+  const progressEl = document.getElementById('progressBar');
+  const statusText = document.getElementById('statusText');
+  const exitBtn = document.getElementById('exitBtn');
+  const exitFs = document.getElementById('exitFs');
+
+  // Helpers: update aria progress
+  function setProgress(pct){
+    progressEl.style.width = pct + '%';
+    progressEl.setAttribute('aria-valuenow', String(Math.round(pct)));
+    statusText.textContent = `Authenticating theatrical lock... ${Math.round(pct)}%`;
+  }
+
+  // Animate fake progress over ~9s (CSS anim also runs)
+  function fakeProgress(duration = 9000){
+    const start = performance.now();
+    function step(now){
+      const t = Math.min((now - start) / duration, 1);
+      const pct = 2 + (96 * t); // 2% -> 98%
+      setProgress(pct);
+      if (t < 1) requestAnimationFrame(step);
+      else statusText.textContent = 'Containment complete — nothing harmed. Press EXIT to leave.';
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Open overlay and request fullscreen (user gesture required)
+  startBtn.addEventListener('click', async () => {
+    // Show overlay visually even if fullscreen is blocked
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+
+    // Try to request fullscreen on documentElement (some browsers require a specific element)
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      // fullscreen denied or blocked — we still show overlay
+      console.warn('Fullscreen request blocked or denied', err);
+    }
+
+    // begin fake progress
+    fakeProgress(9000);
+
+    // Small accessibility focus
+    exitBtn.focus();
+  });
+
+  // Exit handlers
+  async function exitAll(){
+    // hide overlay
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+
+    // exit fullscreen if active
+    if (document.fullscreenElement) {
+      try { await document.exitFullscreen(); } catch(e){ console.warn('exitFullscreen failed', e); }
+    }
+  }
+
+  exitBtn.addEventListener('click', exitAll);
+  exitFs.addEventListener('click', exitAll);
+
+  // Also respond to Escape key (browsers will also exit fullscreen automatically)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      // do a slight visual acknowledgement then exit
+      statusText.textContent = 'Escape pressed — exiting...';
+      setTimeout(exitAll, 220);
+    }
+  });
+
+  // If the user manually leaves fullscreen (via browser), keep overlay visible so they can click Exit.
+  document.addEventListener('fullscreenchange', () => {
+    // if fullscreen was exited by the user (e.g., ESC), still show overlay so they can press exit
+    if (!document.fullscreenElement && overlay.style.display === 'flex') {
+      statusText.textContent = 'Fullscreen closed. Click "EXIT FULLSCREEN" to finish cleanup.';
+    }
+  });
+
+  // Accessibility: trap focus inside overlay while visible (simple)
+  document.addEventListener('focusin', (e) => {
+    if (overlay.style.display === 'flex' && !overlay.contains(e.target)) {
+      // bounce focus back to the panic button
+      e.preventDefault();
+      exitBtn.focus();
+    }
+  });
+</script>
+</body>
+</html>
